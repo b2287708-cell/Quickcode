@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة كويك كود - الكارت الاحترافي</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap'); body { font-family: 'Tajawal', sans-serif; background-color: #f8fafc; }</style>
+</head>
+<body class="text-slate-800 pb-20">
+
+    <nav class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-2">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="12" height="12" rx="3" fill="#4f46e5"/><rect x="16" width="12" height="12" rx="3" fill="#818cf8"/><rect y="16" width="12" height="12" rx="3" fill="#818cf8"/><path d="M16 16H25C26.6569 16 28 17.3431 28 19V28H19C17.3431 28 16 26.6569 16 25V16Z" fill="#10b981"/>
+                    </svg>
+                    <span class="font-extrabold text-2xl text-slate-900">كويك كود</span>
+                </div>
+                <button onclick="window.location.href='dashboard.html'" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg font-bold transition shadow-md">لوحة التحكم</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16">
+        <div class="text-center mb-10 md:mb-16">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 text-indigo-700 font-bold text-sm mb-4 border border-indigo-100">
+                🚀 الجيل الجديد من الروابط
+            </div>
+            <h1 class="text-4xl md:text-5xl font-black text-slate-900 mb-6 leading-tight">
+                صمم <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">هويتك الرقمية</span> في ثوانٍ
+            </h1>
+            <p class="text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
+                أدوات احترافية لإنشاء بطاقات ذكية ورموز استجابة سريعة (QR). تتبع زياراتك، عزز تواجدك، وانطلق بعملك للمستوى التالي.
+            </p>
+        </div>
+
+        <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100 flex flex-col lg:flex-row">
+            <div class="w-full lg:w-1/2 p-6 md:p-8 border-b lg:border-b-0 lg:border-l border-slate-100 space-y-5">
+                <h2 class="text-2xl font-bold mb-6 text-slate-800"><i class="fa-solid fa-pen-to-square ml-2 text-indigo-500"></i>بيانات الكارت</h2>
+                <input type="file" id="logoInput" accept="image/*" class="w-full text-sm p-2 border border-slate-300 rounded-xl bg-slate-50">
+                <input type="text" id="nameInput" placeholder="الاسم الأساسي (مثل: مطعم كذا)" class="w-full px-4 py-3 rounded-xl border border-slate-300 font-bold text-lg">
+                <input type="text" id="subNameInput" placeholder="@username" class="w-full px-4 py-3 rounded-xl border border-slate-300 text-left" dir="ltr">
+                <input type="url" id="urlInput" placeholder="https://..." class="w-full px-4 py-3 rounded-xl border border-slate-300 text-left" dir="ltr">
+                <button id="generateBtn" onclick="updateCardAndSave()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-lg font-bold py-4 rounded-xl shadow-lg transition mt-4">
+                    <i class="fa-solid fa-wand-magic-sparkles ml-2"></i> تحديث وحفظ الكارت
+                </button>
+            </div>
+
+            <div class="w-full lg:w-1/2 p-6 md:p-12 bg-slate-50 flex flex-col items-center justify-center">
+                <div id="capture-area" class="w-full max-w-[360px] bg-gradient-to-br from-indigo-600 via-purple-600 to-slate-900 rounded-[2.5rem] p-6 pt-20 pb-8 relative shadow-2xl">
+                    <div class="bg-white rounded-3xl w-full p-6 text-center relative shadow-lg">
+                        <div class="absolute -top-16 left-1/2 transform -translate-x-1/2">
+                            <div class="w-28 h-28 bg-white rounded-full p-1.5 shadow-xl">
+                                <img id="card-avatar" src="https://ui-avatars.com/api/?name=QC&background=4f46e5&color=fff&size=200" class="w-full h-full rounded-full object-cover bg-white">
+                            </div>
+                        </div>
+                        <div class="mt-12 px-2">
+                            <h3 id="card-title" class="text-2xl font-black text-slate-800 break-words whitespace-normal">الاسم الأساسي</h3>
+                        </div>
+                        <p id="card-subtitle" class="text-slate-500 font-medium mb-6 text-sm truncate px-2 mt-1" dir="ltr">@username</p>
+                        <div class="flex justify-center items-center mb-4">
+                            <div id="qr-container" class="bg-white p-2 rounded-2xl shadow-inner border border-slate-100 min-h-[200px] min-w-[200px] flex items-center justify-center">
+                                <span class="text-slate-400 text-sm border border-dashed border-slate-300 p-10 rounded-xl">سيظهر الرمز هنا</span>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex items-center justify-center gap-2 text-slate-800 font-bold text-sm">
+                            <svg width="16" height="16" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="12" height="12" rx="3" fill="#4f46e5"/><rect x="16" width="12" height="12" rx="3" fill="#818cf8"/><rect y="16" width="12" height="12" rx="3" fill="#818cf8"/><path d="M16 16H25C26.6569 16 28 17.3431 28 19V28H19C17.3431 28 16 26.6569 16 25V16Z" fill="#10b981"/>
+                            </svg>
+                            مصنوع بواسطة كويك كود
+                        </div>
+                    </div>
+                </div>
+                <button id="downloadBtn" onclick="downloadCardImage()" class="mt-8 w-full max-w-[360px] bg-emerald-500 text-white text-lg py-4 rounded-xl font-bold shadow-xl hidden">
+                    <i class="fa-solid fa-download ml-2"></i> تحميل الكارت كصورة
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyD5KPswVjsEuctvxu5nJZzwPQYx_a2CJcA", authDomain: "quick-code-f298e.firebaseapp.com", projectId: "quick-code-f298e", storageBucket: "quick-code-f298e.firebasestorage.app", messagingSenderId: "1093557974042", appId: "1:1093557974042:web:fdda9c0225e92c885a8da3" };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        let currentUser = null;
+
+        onAuthStateChanged(auth, user => currentUser = user || null);
+
+        window.updateCardAndSave = async function() {
+            if (!currentUser) return window.location.href = 'auth.html';
+            let url = document.getElementById('urlInput').value.trim();
+            if (!url) return alert("أدخل الرابط أولاً!");
+            if (!url.startsWith('http')) url = 'https://' + url;
+
+            const name = document.getElementById('nameInput').value.trim() || "بدون اسم";
+            const subName = document.getElementById('subNameInput').value.trim();
+            const file = document.getElementById('logoInput').files[0];
+            
+            const shortId = Math.random().toString(36).substring(2, 8);
+            const smartUrl = `${window.location.origin}/go.html?id=${shortId}`;
+
+            const btn = document.getElementById('generateBtn');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin ml-2"></i> جاري التجهيز والحفظ...';
+
+            let logoBase64 = null;
+            if (file) {
+                // الكود السحري: ضغط الصورة التلقائي قبل رفعها
+                logoBase64 = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = (event) => {
+                        const img = new Image();
+                        img.src = event.target.result;
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            const MAX_SIZE = 250; // أقصى حجم للوجو
+                            let width = img.width;
+                            let height = img.height;
+
+                            if (width > height) {
+                                if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
+                            } else {
+                                if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+                            }
+                            
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, width, height);
+                            // تحويل الصورة لمسار مضغوط جداً (جودة 70%)
+                            resolve(canvas.toDataURL('image/jpeg', 0.7));
+                        };
+                    };
+                });
+                document.getElementById('card-avatar').src = logoBase64;
+            } else {
+                document.getElementById('card-avatar').src = "https://ui-avatars.com/api/?name=QC&background=4f46e5&color=fff&size=200";
+            }
+
+            try {
+                await setDoc(doc(db, "qrcodes", shortId), { 
+                    userId: currentUser.uid, 
+                    originalUrl: url, 
+                    name: name, 
+                    subName: subName, 
+                    shortId: shortId, 
+                    logoBase64: logoBase64, 
+                    clicks: 0, 
+                    createdAt: serverTimestamp() 
+                });
+
+                document.getElementById('card-title').textContent = name;
+                document.getElementById('card-subtitle').textContent = subName;
+
+                const qrContainer = document.getElementById('qr-container');
+                qrContainer.innerHTML = "";
+                new QRCodeStyling({ width: 220, height: 220, data: smartUrl, dotsOptions: { color: "#0f172a", type: "rounded" }, cornersSquareOptions: { color: "#4f46e5", type: "extra-rounded" } }).append(qrContainer);
+                
+                document.getElementById('downloadBtn').classList.remove('hidden');
+                btn.innerHTML = '<i class="fa-solid fa-check ml-2"></i> تم الحفظ بنجاح';
+                setTimeout(() => btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles ml-2"></i> تحديث وحفظ الكارت', 3000);
+            } catch (error) {
+                alert("حدث خطأ أثناء الحفظ، تأكد من اتصالك بالإنترنت.");
+                btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles ml-2"></i> تحديث وحفظ الكارت';
+            }
+        };
+
+        window.downloadCardImage = function() {
+            html2canvas(document.getElementById('capture-area'), { scale: 3, useCORS: true, backgroundColor: null }).then(canvas => {
+                let link = document.createElement('a'); link.download = 'QuickCode_Premium_Card.png';
+                link.href = canvas.toDataURL('image/png'); link.click();
+            });
+        };
+    </script>
+</body>
+</html>

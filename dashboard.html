@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم - كويك كود</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap'); body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; }</style>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        // ضفنا هنا أوامر الحذف (doc, deleteDoc)
+        import { getFirestore, collection, query, where, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyD5KPswVjsEuctvxu5nJZzwPQYx_a2CJcA", authDomain: "quick-code-f298e.firebaseapp.com", projectId: "quick-code-f298e", storageBucket: "quick-code-f298e.firebasestorage.app", messagingSenderId: "1093557974042", appId: "1:1093557974042:web:fdda9c0225e92c885a8da3" };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // متغير لحفظ بيانات الأكواد عشان نعرضها في الكارت بسرعة
+        window.userCodesData = {};
+
+        window.logout = function() { signOut(auth).then(() => { window.location.href = 'auth.html'; }); };
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) { loadUserData(user.uid); } else { window.location.href = 'auth.html'; }
+        });
+
+        function loadUserData(userId) {
+            const q = query(collection(db, "qrcodes"), where("userId", "==", userId));
+            onSnapshot(q, (snapshot) => {
+                let totalVisits = 0;
+                window.userCodesData = {}; // تصفير البيانات القديمة
+                const tbody = document.getElementById('codesTableBody');
+                tbody.innerHTML = ''; 
+
+                if (snapshot.empty) {
+                    tbody.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-slate-500 font-bold">لا توجد أكواد حالياً. ابدأ بإنشاء كودك الأول!</td></tr>`;
+                } else {
+                    snapshot.forEach((docSnap) => {
+                        const data = docSnap.data();
+                        totalVisits += data.clicks || 0;
+                        window.userCodesData[data.shortId] = data; // حفظ البيانات محلياً
+                        
+                        const tr = document.createElement('tr');
+                        tr.className = "border-b border-slate-200 bg-white hover:bg-slate-50 transition";
+                        tr.innerHTML = `
+                            <td class="px-6 py-4 font-bold text-slate-800">${data.name}</td>
+                            <td class="px-6 py-4" dir="ltr"><a href="${data.originalUrl}" target="_blank" class="text-indigo-600 truncate inline-block max-w-[200px] hover:underline">${data.originalUrl}</a></td>
+                            <td class="px-6 py-4"><span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full font-bold">${data.clicks || 0}</span></td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-2">
+                                    <button onclick="showQRCodeModal('${data.shortId}')" class="bg-slate-800 hover:bg-slate-900 text-white px-3 py-2 rounded-lg text-sm font-bold shadow-md transition">
+                                        <i class="fa-solid fa-qrcode ml-1"></i> عرض
+                                    </button>
+                                    <button onclick="deleteCode('${data.shortId}')" class="bg-red-100 hover:bg-red-200 text-red-600 px-3 py-2 rounded-lg text-sm font-bold shadow-sm transition" title="حذف الكود">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+                document.getElementById('statVisits').textContent = totalVisits;
+                document.getElementById('statCodes').textContent = snapshot.size;
+            });
+        }
+
+        // دالة الحذف الجديدة
+        window.deleteCode = async function(shortId) {
+            if(confirm("هل أنت متأكد أنك تريد حذف هذا الكود نهائياً؟ لا يمكن التراجع عن هذا الإجراء.")) {
+                try {
+                    await deleteDoc(doc(db, "qrcodes", shortId));
+                } catch (error) {
+                    alert("حدث خطأ أثناء الحذف.");
+                }
+            }
+        };
+
+        window.showQRCodeModal = function(shortId) {
+            const data = window.userCodesData[shortId];
+            const trackingUrl = `${window.location.origin}/go.html?id=${data.shortId}`;
+            
+            // لو العميل رافع صورة هنجيبها، لو لأ هنجيب الصورة الافتراضية
+            const safeLogo = data.logoBase64 ? data.logoBase64 : `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=4f46e5&color=fff&size=200`;
+
+            document.getElementById('modal-card-title').textContent = data.name;
+            document.getElementById('modal-card-subtitle').textContent = data.subName || '@username';
+            document.getElementById('modal-avatar').src = safeLogo; // حطينا الصورة هنا
+            
+            const container = document.getElementById('modalQRContainer');
+            container.innerHTML = '';
+            
+            new QRCodeStyling({ 
+                width: 200, height: 200, data: trackingUrl, 
+                dotsOptions: { color: "#0f172a", type: "rounded" }, 
+                cornersSquareOptions: { color: "#4f46e5", type: "extra-rounded" },
+                cornersDotOptions: { color: "#0f172a", type: "dot" }
+            }).append(container);
+            
+            document.getElementById('qrModal').classList.remove('hidden');
+        };
+
+        window.closeModal = function() { document.getElementById('qrModal').classList.add('hidden'); };
+
+        window.downloadModalCard = function() {
+            const btn = document.getElementById('modalDownloadBtn');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin ml-2"></i> جاري التجهيز...';
+            html2canvas(document.getElementById('modal-capture-area'), { scale: 3, useCORS: true, backgroundColor: null }).then(canvas => {
+                let link = document.createElement('a'); link.download = 'QuickCode_Saved_Card.png';
+                link.href = canvas.toDataURL('image/png'); link.click();
+                btn.innerHTML = '<i class="fa-solid fa-download ml-2"></i> تحميل الكارت';
+            });
+        };
+    </script>
+</head>
+<body class="bg-slate-50 flex flex-col h-screen overflow-hidden">
+
+    <header class="bg-white border-b border-slate-200 p-4 flex justify-between items-center shadow-sm z-10 shrink-0">
+        <div class="flex items-center gap-2">
+            <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="12" height="12" rx="3" fill="#4f46e5"/><rect x="16" width="12" height="12" rx="3" fill="#818cf8"/><rect y="16" width="12" height="12" rx="3" fill="#818cf8"/><path d="M16 16H25C26.6569 16 28 17.3431 28 19V28H19C17.3431 28 16 26.6569 16 25V16Z" fill="#10b981"/>
+            </svg>
+            <h1 class="font-black text-xl text-slate-900">كويك كود - اللوحة</h1>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="window.location.href='index.html'" class="bg-indigo-600 text-white px-5 py-2 rounded-lg font-bold shadow-md hover:bg-indigo-700 transition">إنشاء كود</button>
+            <button onclick="logout()" class="text-red-500 font-bold px-3 hover:bg-red-50 rounded-lg transition">خروج</button>
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-6 w-full">
+        <div class="max-w-5xl mx-auto">
+            <div class="grid grid-cols-2 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex items-center gap-4">
+                    <div class="w-14 h-14 rounded-2xl bg-indigo-100 flex items-center justify-center text-indigo-600 text-2xl"><i class="fa-solid fa-eye"></i></div>
+                    <div><p class="text-sm font-bold text-slate-500">إجمالي الزيارات</p><h3 id="statVisits" class="text-3xl font-black text-slate-900">0</h3></div>
+                </div>
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex items-center gap-4">
+                    <div class="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-600 text-2xl"><i class="fa-solid fa-qrcode"></i></div>
+                    <div><p class="text-sm font-bold text-slate-500">الأكواد النشطة</p><h3 id="statCodes" class="text-3xl font-black text-slate-900">0</h3></div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="px-6 py-5 border-b border-slate-200"><h3 class="text-xl font-black text-slate-800">أحدث أكوادك</h3></div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-sm">
+                        <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                            <tr>
+                                <th class="px-6 py-4 font-bold">الاسم</th><th class="px-6 py-4 font-bold">الرابط الوجهة</th><th class="px-6 py-4 font-bold">الزيارات</th><th class="px-6 py-4 font-bold">إجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody id="codesTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="qrModal" class="hidden fixed inset-0 bg-slate-900 bg-opacity-70 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all overflow-y-auto">
+        <div class="bg-white rounded-3xl shadow-2xl p-6 md:p-8 max-w-sm w-full relative my-8">
+            <button onclick="closeModal()" class="absolute top-4 left-4 w-8 h-8 flex items-center justify-center bg-slate-100 text-slate-500 hover:bg-red-100 hover:text-red-500 rounded-full transition z-10"><i class="fa-solid fa-xmark"></i></button>
+
+            <div id="modal-capture-area" class="w-full bg-gradient-to-br from-indigo-600 via-purple-600 to-slate-900 rounded-[2rem] p-6 pt-16 pb-8 relative shadow-xl mt-4">
+                <div class="bg-white rounded-3xl w-full p-5 text-center relative shadow-lg">
+                    <div class="absolute -top-12 left-1/2 transform -translate-x-1/2">
+                        <div class="w-24 h-24 bg-white rounded-full p-1.5 shadow-xl">
+                            <img id="modal-avatar" src="" class="w-full h-full rounded-full object-cover">
+                        </div>
+                    </div>
+                    <div class="mt-8 px-1">
+                        <h3 id="modal-card-title" class="text-xl font-black text-slate-800 break-words whitespace-normal">الاسم</h3>
+                    </div>
+                    <p id="modal-card-subtitle" class="text-slate-500 font-medium mb-4 text-sm truncate px-1 mt-1" dir="ltr">@username</p>
+                    
+                    <div class="flex justify-center items-center mb-4">
+                        <div id="modalQRContainer" class="bg-white p-2 rounded-2xl shadow-inner border border-slate-100 flex justify-center"></div>
+                    </div>
+                    
+                    <div class="mt-2 flex items-center justify-center gap-2 text-slate-800 font-bold text-xs">
+                        <svg width="12" height="12" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="12" height="12" rx="3" fill="#4f46e5"/><rect x="16" width="12" height="12" rx="3" fill="#818cf8"/><rect y="16" width="12" height="12" rx="3" fill="#818cf8"/><path d="M16 16H25C26.6569 16 28 17.3431 28 19V28H19C17.3431 28 16 26.6569 16 25V16Z" fill="#10b981"/>
+                        </svg>
+                        مصنوع بواسطة كويك كود
+                    </div>
+                </div>
+            </div>
+
+            <button id="modalDownloadBtn" onclick="downloadModalCard()" class="mt-6 w-full bg-emerald-500 hover:bg-emerald-600 text-white py-4 rounded-xl font-bold shadow-md transition flex justify-center items-center">
+                <i class="fa-solid fa-download ml-2"></i> تحميل الكارت
+            </button>
+        </div>
+    </div>
+
+</body>
+</html>
